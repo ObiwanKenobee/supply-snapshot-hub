@@ -6,6 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 // Set your Mapbox token here
 mapboxgl.accessToken = "YOUR_MAPBOX_TOKEN";
 
+const points = [
+  { coordinates: [36.8219, -1.2921], name: "Nairobi Hub" },
+  { coordinates: [3.3792, 6.5244], name: "Lagos Distribution" },
+  { coordinates: [31.2357, 30.0444], name: "Cairo Warehouse" },
+];
+
 const AfricaMap = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -16,24 +22,20 @@ const AfricaMap = () => {
     if (!mapContainer.current || mapInitialized) return;
 
     try {
+      // Initialize map
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: "mapbox://styles/mapbox/dark-v11",
-        center: [20, 0] as [number, number],
+        center: [20, 0],
         zoom: 2.5,
         projection: "mercator",
       });
 
+      // Add navigation control
       const navControl = new mapboxgl.NavigationControl();
       map.current.addControl(navControl, "top-right");
 
-      // Define supply chain points with explicit typing
-      const points: Array<{ coordinates: [number, number]; name: string }> = [
-        { coordinates: [36.8219, -1.2921], name: "Nairobi Hub" },
-        { coordinates: [3.3792, 6.5244], name: "Lagos Distribution" },
-        { coordinates: [31.2357, 30.0444], name: "Cairo Warehouse" },
-      ];
-
+      // Add markers when map loads
       map.current.on("load", () => {
         if (!map.current) return;
 
