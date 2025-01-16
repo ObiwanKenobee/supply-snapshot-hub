@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 // Set your Mapbox token here
 mapboxgl.accessToken = "YOUR_MAPBOX_TOKEN";
 
-const points = [
+const points: Array<{ coordinates: [number, number]; name: string }> = [
   { coordinates: [36.8219, -1.2921], name: "Nairobi Hub" },
   { coordinates: [3.3792, 6.5244], name: "Lagos Distribution" },
   { coordinates: [31.2357, 30.0444], name: "Cairo Warehouse" },
@@ -26,7 +26,7 @@ const AfricaMap = () => {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: "mapbox://styles/mapbox/dark-v11",
-        center: [20, 0],
+        center: [20, 0] as [number, number],
         zoom: 2.5,
         projection: "mercator",
       });
