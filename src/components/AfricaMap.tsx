@@ -19,7 +19,7 @@ const AfricaMap = () => {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: "mapbox://styles/mapbox/dark-v11",
-        center: [20, 0],
+        center: [20, 0] as [number, number],
         zoom: 2.5,
         projection: "mercator",
       });
@@ -27,12 +27,12 @@ const AfricaMap = () => {
       const navControl = new mapboxgl.NavigationControl();
       map.current.addControl(navControl, "top-right");
 
-      // Add some example supply chain points
-      const points = [
+      // Define supply chain points with explicit typing
+      const points: Array<{ coordinates: [number, number]; name: string }> = [
         { coordinates: [36.8219, -1.2921], name: "Nairobi Hub" },
         { coordinates: [3.3792, 6.5244], name: "Lagos Distribution" },
         { coordinates: [31.2357, 30.0444], name: "Cairo Warehouse" },
-      ] as const;
+      ];
 
       map.current.on("load", () => {
         if (!map.current) return;
