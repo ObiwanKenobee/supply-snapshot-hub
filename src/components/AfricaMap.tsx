@@ -6,7 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 // Set your Mapbox token here
 mapboxgl.accessToken = "YOUR_MAPBOX_TOKEN";
 
-const points: Array<{ coordinates: [number, number]; name: string }> = [
+interface MapPoint {
+  coordinates: [number, number];
+  name: string;
+}
+
+const points: MapPoint[] = [
   { coordinates: [36.8219, -1.2921], name: "Nairobi Hub" },
   { coordinates: [3.3792, 6.5244], name: "Lagos Distribution" },
   { coordinates: [31.2357, 30.0444], name: "Cairo Warehouse" },
@@ -14,68 +19,56 @@ const points: Array<{ coordinates: [number, number]; name: string }> = [
 
 const AfricaMap = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
-  const [mapInitialized, setMapInitialized] = useState(false);
+  const [map, setMap] = useState<mapboxgl.Map | null>(null);
+  const [markers, setMarkers] = useState<mapboxgl.Marker[]>([]);
 
   useEffect(() => {
-    if (!mapContainer.current || mapInitialized) return;
+    if (!mapContainer.current || map) return;
 
-    try {
-      // Initialize map
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: "mapbox://styles/mapbox/dark-v11",
-        center: [20, 0] as [number, number],
-        zoom: 2.5,
-        projection: "mercator",
-      });
-
-      // Add navigation control
-      const navControl = new mapboxgl.NavigationControl();
-      map.current.addControl(navControl, "top-right");
-
-      // Add markers when map loads
-      map.current.on("load", () => {
-        if (!map.current) return;
-
-        // Clear existing markers
-        markersRef.current.forEach(marker => marker.remove());
-        markersRef.current = [];
-
-        // Add new markers
-        points.forEach(point => {
-          const marker = new mapboxgl.Marker()
-            .setLngLat(point.coordinates)
-            .setPopup(
-              new mapboxgl.Popup({ offset: 25 })
-                .setHTML(`<h3>${point.name}</h3>`)
-            )
-            .addTo(map.current!);
-
-          markersRef.current.push(marker);
+    const initializeMap = () => {
+      try {
+        const newMap = new mapboxgl.Map({
+          container: mapContainer.current!,
+          style: "mapbox://styles/mapbox/dark-v11",
+          center: [20, 0],
+          zoom: 2.5,
+          projection: "mercator",
         });
-      });
 
-      setMapInitialized(true);
-    } catch (error) {
-      console.error("Error initializing map:", error);
-    }
+        newMap.addControl(new mapboxgl.NavigationControl(), "top-right");
+
+        newMap.on("load", () => {
+          const newMarkers = points.map(point => {
+            const marker = new mapboxgl.Marker()
+              .setLngLat(point.coordinates)
+              .setPopup(
+                new mapboxgl.Popup({ offset: 25 })
+                  .setHTML(`<h3>${point.name}</h3>`)
+              )
+              .addTo(newMap);
+            return marker;
+          });
+          setMarkers(newMarkers);
+        });
+
+        setMap(newMap);
+      } catch (error) {
+        console.error("Error initializing map:", error);
+      }
+    };
+
+    initializeMap();
 
     // Cleanup function
     return () => {
-      // Remove markers first
-      markersRef.current.forEach(marker => marker.remove());
-      markersRef.current = [];
-
-      // Then remove the map
-      if (map.current) {
-        map.current.remove();
-        map.current = null;
+      markers.forEach(marker => marker.remove());
+      if (map) {
+        map.remove();
+        setMap(null);
+        setMarkers([]);
       }
-      setMapInitialized(false);
     };
-  }, [mapInitialized]);
+  }, []);
 
   return (
     <Card className="col-span-3">
