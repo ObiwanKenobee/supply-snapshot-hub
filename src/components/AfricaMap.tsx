@@ -1,10 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-// Set your Mapbox token here
-mapboxgl.accessToken = "YOUR_MAPBOX_TOKEN";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface MapPoint {
   coordinates: [number, number];
@@ -19,39 +18,55 @@ const points: MapPoint[] = [
 
 const AfricaMap = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
+  const [token, setToken] = useState("");
+  const [mapInitialized, setMapInitialized] = useState(false);
+
+  const initializeMap = () => {
+    if (!mapContainer.current || !token || mapInitialized) return;
+
+    try {
+      mapboxgl.accessToken = token;
+      const markers: mapboxgl.Marker[] = [];
+      
+      const map = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: "mapbox://styles/mapbox/dark-v11",
+        center: [20, 0],
+        zoom: 2.5,
+        projection: "mercator",
+      });
+
+      map.addControl(new mapboxgl.NavigationControl(), "top-right");
+
+      map.on("load", () => {
+        points.forEach((point) => {
+          const marker = new mapboxgl.Marker()
+            .setLngLat([...point.coordinates])
+            .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`<h3>${point.name}</h3>`))
+            .addTo(map);
+          markers.push(marker);
+        });
+      });
+
+      setMapInitialized(true);
+
+      return () => {
+        markers.forEach((marker) => marker.remove());
+        map.remove();
+        setMapInitialized(false);
+      };
+    } catch (error) {
+      console.error("Error initializing map:", error);
+      setMapInitialized(false);
+    }
+  };
 
   useEffect(() => {
-    if (!mapContainer.current) return;
-
-    const markers: mapboxgl.Marker[] = [];
-    const map = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: "mapbox://styles/mapbox/dark-v11",
-      center: [20, 0],
-      zoom: 2.5,
-      projection: "mercator",
-    });
-
-    map.addControl(new mapboxgl.NavigationControl(), "top-right");
-
-    const addMarkers = () => {
-      points.forEach((point) => {
-        const coordinates: [number, number] = [...point.coordinates];
-        const marker = new mapboxgl.Marker()
-          .setLngLat(coordinates)
-          .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`<h3>${point.name}</h3>`))
-          .addTo(map);
-        markers.push(marker);
-      });
-    };
-
-    map.on("load", addMarkers);
-
-    return () => {
-      markers.forEach((marker) => marker.remove());
-      map.remove();
-    };
-  }, []);
+    if (token) {
+      const cleanup = initializeMap();
+      return () => cleanup?.();
+    }
+  }, [token]);
 
   return (
     <Card className="col-span-3">
@@ -59,6 +74,32 @@ const AfricaMap = () => {
         <CardTitle>Supply Chain Network</CardTitle>
       </CardHeader>
       <CardContent>
+        {!mapInitialized && (
+          <div className="mb-4 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Please enter your Mapbox public token to view the map. You can get one from{" "}
+              <a
+                href="https://www.mapbox.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                Mapbox
+              </a>
+            </p>
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                placeholder="Enter Mapbox token"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+              />
+              <Button onClick={initializeMap} disabled={!token}>
+                Initialize Map
+              </Button>
+            </div>
+          </div>
+        )}
         <div
           ref={mapContainer}
           className="h-[400px] w-full rounded-md border"
