@@ -20,6 +20,7 @@ const AfricaMap = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const [token, setToken] = useState("");
   const [mapInitialized, setMapInitialized] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const initializeMap = () => {
     if (!mapContainer.current || !token || mapInitialized) return;
@@ -34,6 +35,13 @@ const AfricaMap = () => {
         center: [20, 0],
         zoom: 2.5,
         projection: "mercator",
+        transformRequest: (url: string, resourceType: string) => {
+          if (resourceType === 'Source' || resourceType === 'Tile') {
+            return {
+              url: url.replace(':/', '://'),
+            };
+          }
+        },
       });
 
       map.addControl(new mapboxgl.NavigationControl(), "top-right");
@@ -41,14 +49,21 @@ const AfricaMap = () => {
       map.on("load", () => {
         points.forEach((point) => {
           const marker = new mapboxgl.Marker()
-            .setLngLat([...point.coordinates])
+            .setLngLat(point.coordinates)
             .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`<h3>${point.name}</h3>`))
             .addTo(map);
           markers.push(marker);
         });
       });
 
+      map.on("error", (e) => {
+        console.error("Mapbox error:", e);
+        setError("An error occurred while loading the map. Please check your token and try again.");
+        setMapInitialized(false);
+      });
+
       setMapInitialized(true);
+      setError(null);
 
       return () => {
         markers.forEach((marker) => marker.remove());
@@ -57,6 +72,7 @@ const AfricaMap = () => {
       };
     } catch (error) {
       console.error("Error initializing map:", error);
+      setError("Failed to initialize the map. Please check your token and try again.");
       setMapInitialized(false);
     }
   };
@@ -87,6 +103,9 @@ const AfricaMap = () => {
                 Mapbox
               </a>
             </p>
+            {error && (
+              <p className="text-sm text-red-500">{error}</p>
+            )}
             <div className="flex gap-2">
               <Input
                 type="text"
