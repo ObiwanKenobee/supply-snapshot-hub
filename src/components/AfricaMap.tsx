@@ -6,11 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 // Set your Mapbox token here
 mapboxgl.accessToken = "YOUR_MAPBOX_TOKEN";
 
-const points = [
+interface MapPoint {
+  coordinates: [number, number];
+  name: string;
+}
+
+const points: MapPoint[] = [
   { coordinates: [36.8219, -1.2921], name: "Nairobi Hub" },
   { coordinates: [3.3792, 6.5244], name: "Lagos Distribution" },
   { coordinates: [31.2357, 30.0444], name: "Cairo Warehouse" },
-] as const;
+];
 
 const AfricaMap = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -36,8 +41,10 @@ const AfricaMap = () => {
     // Add markers when map loads
     map.on("load", () => {
       points.forEach((point) => {
+        // Create a mutable copy of the coordinates for mapboxgl
+        const coordinates: [number, number] = [...point.coordinates];
         const marker = new mapboxgl.Marker()
-          .setLngLat(point.coordinates)
+          .setLngLat(coordinates)
           .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`<h3>${point.name}</h3>`))
           .addTo(map);
         markers.push(marker);
