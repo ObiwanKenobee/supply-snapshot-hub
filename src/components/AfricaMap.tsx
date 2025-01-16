@@ -23,7 +23,7 @@ const AfricaMap = () => {
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    // Initialize map
+    const markers: mapboxgl.Marker[] = [];
     const map = new mapboxgl.Map({
       container: mapContainer.current,
       style: "mapbox://styles/mapbox/dark-v11",
@@ -32,16 +32,10 @@ const AfricaMap = () => {
       projection: "mercator",
     });
 
-    // Add navigation control
     map.addControl(new mapboxgl.NavigationControl(), "top-right");
 
-    // Create markers array to track them for cleanup
-    const markers: mapboxgl.Marker[] = [];
-
-    // Add markers when map loads
-    map.on("load", () => {
+    const addMarkers = () => {
       points.forEach((point) => {
-        // Create a mutable copy of the coordinates for mapboxgl
         const coordinates: [number, number] = [...point.coordinates];
         const marker = new mapboxgl.Marker()
           .setLngLat(coordinates)
@@ -49,9 +43,10 @@ const AfricaMap = () => {
           .addTo(map);
         markers.push(marker);
       });
-    });
+    };
 
-    // Cleanup function
+    map.on("load", addMarkers);
+
     return () => {
       markers.forEach((marker) => marker.remove());
       map.remove();
