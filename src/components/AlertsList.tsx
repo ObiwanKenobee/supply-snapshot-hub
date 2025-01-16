@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, Clock, TrendingDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const alerts = [
   {
