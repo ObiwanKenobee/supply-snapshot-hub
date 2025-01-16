@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,53 +19,55 @@ const points: MapPoint[] = [
 
 const AfricaMap = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<mapboxgl.Map | null>(null);
-  const [markers, setMarkers] = useState<mapboxgl.Marker[]>([]);
+  const mapInstance = useRef<mapboxgl.Map | null>(null);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
 
   useEffect(() => {
-    if (!mapContainer.current || map) return;
+    if (!mapContainer.current || mapInstance.current) return;
 
     const initializeMap = () => {
-      try {
-        const newMap = new mapboxgl.Map({
-          container: mapContainer.current!,
-          style: "mapbox://styles/mapbox/dark-v11",
-          center: [20, 0],
-          zoom: 2.5,
-          projection: "mercator",
+      if (!mapContainer.current) return;
+
+      mapInstance.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: "mapbox://styles/mapbox/dark-v11",
+        center: [20, 0],
+        zoom: 2.5,
+        projection: "mercator",
+      });
+
+      mapInstance.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+
+      mapInstance.current.on("load", () => {
+        if (!mapInstance.current) return;
+        
+        points.forEach(point => {
+          const marker = new mapboxgl.Marker()
+            .setLngLat(point.coordinates)
+            .setPopup(
+              new mapboxgl.Popup({ offset: 25 })
+                .setHTML(`<h3>${point.name}</h3>`)
+            )
+            .addTo(mapInstance.current!);
+          
+          markersRef.current.push(marker);
         });
-
-        newMap.addControl(new mapboxgl.NavigationControl(), "top-right");
-
-        newMap.on("load", () => {
-          const newMarkers = points.map(point => {
-            const marker = new mapboxgl.Marker()
-              .setLngLat(point.coordinates)
-              .setPopup(
-                new mapboxgl.Popup({ offset: 25 })
-                  .setHTML(`<h3>${point.name}</h3>`)
-              )
-              .addTo(newMap);
-            return marker;
-          });
-          setMarkers(newMarkers);
-        });
-
-        setMap(newMap);
-      } catch (error) {
-        console.error("Error initializing map:", error);
-      }
+      });
     };
 
     initializeMap();
 
-    // Cleanup function
     return () => {
-      markers.forEach(marker => marker.remove());
-      if (map) {
-        map.remove();
-        setMap(null);
-        setMarkers([]);
+      // Clean up markers
+      markersRef.current.forEach(marker => {
+        if (marker) marker.remove();
+      });
+      markersRef.current = [];
+
+      // Clean up map
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
       }
     };
   }, []);
