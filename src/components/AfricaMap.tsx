@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,15 +9,17 @@ mapboxgl.accessToken = "YOUR_MAPBOX_TOKEN";
 const AfricaMap = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const [mapInitialized, setMapInitialized] = useState(false);
 
   useEffect(() => {
-    if (!mapContainer.current || map.current) return;
+    if (!mapContainer.current || mapInitialized) return;
 
     try {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: "mapbox://styles/mapbox/dark-v11",
-        center: [20, 0] as [number, number],
+        center: [20, 0],
         zoom: 2.5,
         projection: "mercator",
       });
@@ -25,38 +27,53 @@ const AfricaMap = () => {
       const navControl = new mapboxgl.NavigationControl();
       map.current.addControl(navControl, "top-right");
 
-      // Add some example supply chain points with explicit typing
-      const points: Array<{ coordinates: [number, number]; name: string }> = [
+      // Add some example supply chain points
+      const points = [
         { coordinates: [36.8219, -1.2921], name: "Nairobi Hub" },
         { coordinates: [3.3792, 6.5244], name: "Lagos Distribution" },
         { coordinates: [31.2357, 30.0444], name: "Cairo Warehouse" },
-      ];
+      ] as const;
 
       map.current.on("load", () => {
         if (!map.current) return;
 
-        points.forEach((point) => {
+        // Clear existing markers
+        markersRef.current.forEach(marker => marker.remove());
+        markersRef.current = [];
+
+        // Add new markers
+        points.forEach(point => {
           const marker = new mapboxgl.Marker()
             .setLngLat(point.coordinates)
-            .setPopup(new mapboxgl.Popup().setHTML(`<h3>${point.name}</h3>`))
+            .setPopup(
+              new mapboxgl.Popup({ offset: 25 })
+                .setHTML(`<h3>${point.name}</h3>`)
+            )
             .addTo(map.current!);
 
-          // Store markers in a way that can be cleaned up
-          return marker;
+          markersRef.current.push(marker);
         });
       });
+
+      setMapInitialized(true);
     } catch (error) {
       console.error("Error initializing map:", error);
     }
 
     // Cleanup function
     return () => {
+      // Remove markers first
+      markersRef.current.forEach(marker => marker.remove());
+      markersRef.current = [];
+
+      // Then remove the map
       if (map.current) {
         map.current.remove();
         map.current = null;
       }
+      setMapInitialized(false);
     };
-  }, []);
+  }, [mapInitialized]);
 
   return (
     <Card className="col-span-3">
